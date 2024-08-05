@@ -170,7 +170,23 @@ void DebugMon_Handler(void)
 void PendSV_Handler(void)
 {
   /* USER CODE BEGIN PendSV_IRQn 0 */
+  __asm volatile (
+        "LDR R0, =blockPtr\n"
+        "LDR R0, [R0]\n"
+        "LDR R0, [R0]\n"
 
+        "STMDB R0!, {R4-R11}\n"
+
+        "LDR R1, =blockPtr\n"
+        "LDR R1, [R1]\n"
+        "STR R0, [R1]\n"
+
+        "ADD R4, R4, #1\n"
+        "ADD R5, R5, #1\n"
+
+        "LDMIA R0!, {R4-R11}\n"
+
+        "BX LR\n");
   /* USER CODE END PendSV_IRQn 0 */
   /* USER CODE BEGIN PendSV_IRQn 1 */
 

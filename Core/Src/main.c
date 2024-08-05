@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "switch.c"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +56,20 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void triggerPendSV(void) {
+  MEM8(NVIC_SYSPRI2) = NVIC_PENDSV_PRI;
+  MEM32(NVIC_INT_CTRL) = NVIC_PENDSVSET;
+}
+
+typedef struct _BlockType_t {
+  unsigned long * stackPtr;
+}BlockType_t;
+
+BlockType_t * blockPtr;
+extern BlockType_t *blockPtr;
+
+unsigned long stackBuffer[100];
+BlockType_t block;
 
 /* USER CODE END 0 */
 
@@ -90,7 +104,8 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  block.stackPtr = &stackBuffer[100];
+  blockPtr = &block;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -100,9 +115,11 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_UART_Transmit(&huart1, (uint8_t *)"Hello World!\r\n", 14, 1000);
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    // HAL_UART_Transmit(&huart1, (uint8_t *)"Hello World!\r\n", 14, 1000);
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     HAL_Delay(1000);
+
+    triggerPendSV();
   }
   /* USER CODE END 3 */
 }
