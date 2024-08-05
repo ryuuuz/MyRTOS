@@ -22,6 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "MyRTOS.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,6 +56,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN EV */
 
@@ -171,22 +173,25 @@ void PendSV_Handler(void)
 {
   /* USER CODE BEGIN PendSV_IRQn 0 */
   __asm volatile (
-        "LDR R0, =blockPtr\n"
-        "LDR R0, [R0]\n"
-        "LDR R0, [R0]\n"
+    "MRS R0, PSP\n"
+    "CBZ R0, no_save\n"
+    "STMDB R0!, {R4-R11}\n"
+    "LDR R1, =currentTask\n"
+    "LDR R1, [R1]\n"
+    "STR R0, [R1]\n"
 
-        "STMDB R0!, {R4-R11}\n"
+    "no_save:\n"
+    "LDR R0, =nextTask\n"
+    "LDR R2, [R0]\n"
+    "LDR R0, =currentTask\n"
+    "STR R2, [R0]\n"
 
-        "LDR R1, =blockPtr\n"
-        "LDR R1, [R1]\n"
-        "STR R0, [R1]\n"
+    "LDR R0, [R2]\n"
+    "LDMIA R0!, {R4-R11}\n"
 
-        "ADD R4, R4, #1\n"
-        "ADD R5, R5, #1\n"
-
-        "LDMIA R0!, {R4-R11}\n"
-
-        "BX LR\n");
+    "MSR PSP, R0\n"
+    "ORR LR, LR, #0x04\n"
+    "BX LR\n");;
   /* USER CODE END PendSV_IRQn 0 */
   /* USER CODE BEGIN PendSV_IRQn 1 */
 
@@ -201,9 +206,9 @@ void SysTick_Handler(void)
   /* USER CODE BEGIN SysTick_IRQn 0 */
 
   /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
 
+  /* USER CODE BEGIN SysTick_IRQn 1 */
+  tTaskSystemTickHandler();
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -213,6 +218,20 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f1xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles TIM4 global interrupt.
+  */
+void TIM4_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM4_IRQn 0 */
+
+  /* USER CODE END TIM4_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim4);
+  /* USER CODE BEGIN TIM4_IRQn 1 */
+
+  /* USER CODE END TIM4_IRQn 1 */
+}
 
 /* USER CODE BEGIN 1 */
 

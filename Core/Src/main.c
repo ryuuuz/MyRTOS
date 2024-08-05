@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "switch.c"
+#include "MyRTOS.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +45,19 @@
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+tTask * currentTask;
+tTask * nextTask;
+tTask * idleTask;
+tTask * taskTable[2];
+
+tTask tTaskIdle;
+tTask tTask1;
+tTask tTask2;
+
+tTaskStack taskIdleEnv[1024];
+tTaskStack task1Env[1024];
+tTaskStack task2Env[1024];
+
 
 /* USER CODE END PV */
 
@@ -52,14 +67,14 @@ static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
+void idleTaskEntry(void * param);
+void task1Entry(void * param);
+void task2Entry(void * param);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void triggerPendSV(void) {
-  MEM8(NVIC_SYSPRI2) = NVIC_PENDSV_PRI;
-  MEM32(NVIC_INT_CTRL) = NVIC_PENDSVSET;
-}
 
 typedef struct _BlockType_t {
   unsigned long * stackPtr;
@@ -68,8 +83,37 @@ typedef struct _BlockType_t {
 BlockType_t * blockPtr;
 extern BlockType_t *blockPtr;
 
-unsigned long stackBuffer[100];
-BlockType_t block;
+void tSetSysTickPeriod(uint32_t ms)
+{
+  SysTick->LOAD  = ms * SystemCoreClock / 1000 - 1;
+  NVIC_SetPriority (SysTick_IRQn, (1<<__NVIC_PRIO_BITS) - 1);
+  SysTick->VAL   = 0;
+  SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
+                   SysTick_CTRL_TICKINT_Msk   |
+                   SysTick_CTRL_ENABLE_Msk;
+}
+
+void idleTaskEntry(void * param) {
+  while(1) {
+
+  }
+}
+
+void task1Entry(void * param) {
+  while(1) {
+    tSetSysTickPeriod(10);
+
+    HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
+    HAL_Delay(1000);
+  }
+}
+
+void task2Entry(void * param) {
+  while(1) {
+    HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
+    HAL_Delay(1000);
+  }
+}
 
 /* USER CODE END 0 */
 
@@ -104,8 +148,18 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  block.stackPtr = &stackBuffer[100];
-  blockPtr = &block;
+  tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0, &taskIdleEnv[1024]);
+  tTaskInit(&tTask1, task1Entry, (void *)0x11111111, &task1Env[1024]);
+  tTaskInit(&tTask2, task2Entry, (void *)0x22222222, &task2Env[1024]);
+
+  taskTable[0] = &tTask1;
+  taskTable[1] = &tTask2;
+
+  nextTask = taskTable[0];
+  idleTask = &tTaskIdle;
+
+  tTaskRunFirst();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,8 +172,8 @@ int main(void)
     // HAL_UART_Transmit(&huart1, (uint8_t *)"Hello World!\r\n", 14, 1000);
     // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     HAL_Delay(1000);
+    break;
 
-    triggerPendSV();
   }
   /* USER CODE END 3 */
 }
@@ -225,6 +279,27 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM4 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM4) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
