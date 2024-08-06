@@ -48,7 +48,8 @@
 tTask * currentTask;
 tTask * nextTask;
 tTask * idleTask;
-tTask * taskTable[2];
+tBitmap taskPrioBitmap;
+tTask * taskTable[MYRTOS_PRO_COUNT];
 
 tTask tTaskIdle;
 tTask tTask1;
@@ -100,23 +101,8 @@ void idleTaskEntry(void * param) {
 
 int firstSet = 0;
 void task1Entry(void * param) {
+  tSetSysTickPeriod(10);
   while(1) {
-    tBitmap bitmap;
-
-    tBitmapInit(&bitmap);
-
-    for (int i = tBitmapPosCount() - 1; i >= 0; i--) {
-      tBitmapSet(&bitmap, i);
-      firstSet = tBitmapGetFirstSet(&bitmap);
-    }
-
-    for (int i = 0; i < tBitmapPosCount(); i++) {
-      tBitmapClear(&bitmap, i);
-      firstSet = tBitmapGetFirstSet(&bitmap);
-    }
-
-    tSetSysTickPeriod(10);
-
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
     tTaskDelay(100);
   }
@@ -164,15 +150,16 @@ int main(void)
   /* USER CODE BEGIN 2 */
   tTaskSchedInit();
 
-  tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0, &taskIdleEnv[1024]);
-  tTaskInit(&tTask1, task1Entry, (void *)0x11111111, &task1Env[1024]);
-  tTaskInit(&tTask2, task2Entry, (void *)0x22222222, &task2Env[1024]);
+  tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0,MYRTOS_PRO_COUNT - 1,  &taskIdleEnv[1024]);
+  tTaskInit(&tTask1, task1Entry, (void *)0x11111111, 0, &task1Env[1024]);
+  tTaskInit(&tTask2, task2Entry, (void *)0x22222222, 1, &task2Env[1024]);
 
   taskTable[0] = &tTask1;
   taskTable[1] = &tTask2;
 
-  nextTask = taskTable[0];
   idleTask = &tTaskIdle;
+
+  nextTask = tTaskHighestReady();
 
   tTaskRunFirst();
 

@@ -6,25 +6,28 @@
 #define MYRTOS_H
 
 #include <stdint.h>
-#include "cmsis_gcc.h"
 
 #include "myLib.h"
+#include "tConfig.h"
 
 typedef uint32_t tTaskStack;
 
 typedef struct _tTask {
     tTaskStack * stack;
     uint32_t delayTicks;
+    uint32_t prio;
 }tTask;
 
 extern tTask * currentTask;
 extern tTask * nextTask;
 extern tTask * idleTask;
-extern tTask * taskTable[2];
+
+extern tBitmap taskPrioBitmap;
+extern tTask * taskTable[MYRTOS_PRO_COUNT];
 extern uint8_t schedLockCount;
 extern uint32_t tickCounter;
 
-void tTaskInit(tTask * task, void (*entry)(void *), void * param, tTaskStack * stack);
+void tTaskInit(tTask * task, void (*entry)(void *), void * param, uint32_t prio,tTaskStack * stack);
 void tTaskRunFirst(void);
 void tTaskSwitch(void);
 void tTaskSched(void);
@@ -37,5 +40,7 @@ void tTaskExitCritical(uint32_t status);
 void tTaskSchedInit(void);
 void tTaskSchedDisable(void);
 void tTaskSchedEnable(void);
+
+tTask * tTaskHighestReady(void);
 
 #endif //MYRTOS_H

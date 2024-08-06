@@ -1,4 +1,5 @@
 #include "MyRTOS.h"
+#include "cmsis_gcc.h"
 
 #define NVIC_INT_CTRL 0xE000ED04
 #define NVIC_PENDSVSET 0x10000000
@@ -8,7 +9,7 @@
 #define MEM32(addr)  *(volatile unsigned long *)(addr)
 #define MEM8(addr)  *(volatile unsigned char *)(addr)
 
-void tTaskInit(tTask * task, void (*entry)(void *), void * param, tTaskStack * stack) {
+void tTaskInit(tTask * task, void (*entry)(void *), void * param, uint32_t prio,tTaskStack * stack) {
     *(--stack) = (unsigned long)(1 << 24);
     *(--stack) = (unsigned long)entry;
     *(--stack) = (unsigned long)0x14;
@@ -29,6 +30,10 @@ void tTaskInit(tTask * task, void (*entry)(void *), void * param, tTaskStack * s
 
     task->stack = stack;
     task->delayTicks = 0;
+    task->prio = prio;
+
+    taskTable[prio] = task;
+    tBitmapSet(&taskPrioBitmap, prio);
 }
 
 void tTaskRunFirst(void)
@@ -45,6 +50,7 @@ void tTaskSwitch(void)
 }
 
 void tTaskSched(void) {
+    tTask * tempTask;
     uint32_t status = tTaskEnterCritical();
 
     if (schedLockCount > 0) {
@@ -52,38 +58,11 @@ void tTaskSched(void) {
         return;
     }
 
-    if (currentTask == idleTask) {
-        if (taskTable[0]->delayTicks == 0) {
-            nextTask = taskTable[0];
-        } else if (taskTable[1]->delayTicks == 0) {
-            nextTask = taskTable[1];
-        } else {
-            tTaskExitCritical(status);
-            return;
-        }
-    } else {
-        if (currentTask == taskTable[0]) {
-            if (taskTable[1]->delayTicks == 0) {
-                nextTask = taskTable[1];
-            } else if (currentTask->delayTicks != 0) {
-                nextTask = idleTask;
-            } else {
-                tTaskExitCritical(status);
-                return;
-            }
-        } else if (currentTask == taskTable[1]) {
-            if (taskTable[0]->delayTicks == 0) {
-                nextTask = taskTable[0];
-            } else if (currentTask->delayTicks != 0) {
-                nextTask = idleTask;
-            } else {
-                tTaskExitCritical(status);
-                return;
-            }
-        }
+    tempTask = tTaskHighestReady();
+    if (tempTask != currentTask) {
+        nextTask = tempTask;
+        tTaskSwitch();
     }
-
-    tTaskSwitch();
 
     tTaskExitCritical(status);
 }
@@ -93,9 +72,15 @@ void tTaskSystemTickHandler(void) {
 
     uint32_t status = tTaskEnterCritical();
 
-    for(i = 0; i < 2; i++) {
+    for(i = 0; i < MYRTOS_PRO_COUNT; i++) {
+        if (taskTable[i] == (tTask*)0) {
+            continue;
+        }
+
         if(taskTable[i]->delayTicks > 0) {
             taskTable[i]->delayTicks--;
+        } else {
+            tBitmapSet(&taskPrioBitmap, i);
         }
     }
 
@@ -107,6 +92,7 @@ void tTaskSystemTickHandler(void) {
 void tTaskDelay(uint32_t ticks) {
     uint32_t status = tTaskEnterCritical();
     currentTask->delayTicks = ticks;
+    tBitmapClear(&taskPrioBitmap, currentTask->prio);
     tTaskExitCritical(status);
 
     tTaskSched();
@@ -124,6 +110,7 @@ void tTaskExitCritical(uint32_t status) {
 
 void tTaskSchedInit(void) {
     schedLockCount = 0;
+    tBitmapInit(&taskPrioBitmap);
 }
 
 void tTaskSchedDisable(void) {
@@ -148,3 +135,7 @@ void tTaskSchedEnable(void) {
     tTaskExitCritical(status);
 }
 
+tTask * tTaskHighestReady(void) {
+    uint32_t highestPrio = tBitmapGetFirstSet(&taskPrioBitmap);
+    return taskTable[highestPrio];
+}
