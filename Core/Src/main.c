@@ -23,7 +23,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "switch.c"
 #include "MyRTOS.h"
 
 /* USER CODE END Includes */
@@ -60,8 +59,6 @@ tTaskStack task1Env[1024];
 tTaskStack task2Env[1024];
 
 uint8_t schedLockCount;
-
-uint32_t shareCount;
 
 /* USER CODE END PV */
 
@@ -101,21 +98,27 @@ void idleTaskEntry(void * param) {
   }
 }
 
+int firstSet = 0;
 void task1Entry(void * param) {
   while(1) {
-    tSetSysTickPeriod(10);
+    tBitmap bitmap;
 
-    uint32_t var;
-    tTaskSchedDisable();
-    var = shareCount;
+    tBitmapInit(&bitmap);
+
+    for (int i = tBitmapPosCount() - 1; i >= 0; i--) {
+      tBitmapSet(&bitmap, i);
+      firstSet = tBitmapGetFirstSet(&bitmap);
+    }
+
+    for (int i = 0; i < tBitmapPosCount(); i++) {
+      tBitmapClear(&bitmap, i);
+      firstSet = tBitmapGetFirstSet(&bitmap);
+    }
+
+    tSetSysTickPeriod(10);
 
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
     tTaskDelay(100);
-
-    var++;
-    shareCount = var;
-
-    tTaskSchedEnable();
   }
 }
 
@@ -123,10 +126,6 @@ void task2Entry(void * param) {
   while(1) {
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
     tTaskDelay(100);
-
-    tTaskSchedDisable();
-    shareCount++;
-    tTaskSchedEnable();
   }
 }
 

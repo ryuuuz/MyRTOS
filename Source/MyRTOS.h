@@ -6,6 +6,9 @@
 #define MYRTOS_H
 
 #include <stdint.h>
+#include "cmsis_gcc.h"
+
+#include "myLib.h"
 
 typedef uint32_t tTaskStack;
 
