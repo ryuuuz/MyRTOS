@@ -47,21 +47,21 @@
 /* USER CODE BEGIN PV */
 tTask * currentTask;
 tTask * nextTask;
-tTask * idleTask;
 tBitmap taskPrioBitmap;
-tTask * taskTable[MYRTOS_PRO_COUNT];
+tList taskTable[MYRTOS_PRO_COUNT];
+
+uint8_t schedLockCount;
+tList tTaskDelayedList;
 
 tTask tTaskIdle;
 tTask tTask1;
 tTask tTask2;
+tTask tTask3;
 
-tTaskStack taskIdleEnv[1024];
-tTaskStack task1Env[1024];
-tTaskStack task2Env[1024];
-
-uint8_t schedLockCount;
-
-tList tTaskDelayedList;
+tTaskStack taskIdleEnv[128];
+tTaskStack task1Env[128];
+tTaskStack task2Env[128];
+tTaskStack task3Env[128];
 
 /* USER CODE END PV */
 
@@ -72,6 +72,7 @@ void SystemClock_Config(void);
 void idleTaskEntry(void * param);
 void task1Entry(void * param);
 void task2Entry(void * param);
+void task3Entry(void * param);
 
 /* USER CODE END PFP */
 
@@ -108,13 +109,20 @@ void task1Entry(void * param) {
 
   while(1) {
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
-    tTaskDelay(100);
+    tTaskDelay(300);
   }
 }
 
 void task2Entry(void * param) {
   while(1) {
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
+    tTaskDelay(100);
+  }
+}
+
+void task3Entry(void * param) {
+  while(1) {
+    HAL_UART_Transmit(&huart1, (uint8_t *)"This is task3\r\n", 15, 1000);
     tTaskDelay(100);
   }
 }
@@ -155,14 +163,10 @@ int main(void)
   tTaskSchedInit();
   tTaskDelayListInit();
 
-  tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0,MYRTOS_PRO_COUNT - 1,  &taskIdleEnv[1024]);
-  tTaskInit(&tTask1, task1Entry, (void *)0x11111111, 0, &task1Env[1024]);
-  tTaskInit(&tTask2, task2Entry, (void *)0x22222222, 1, &task2Env[1024]);
-
-  taskTable[0] = &tTask1;
-  taskTable[1] = &tTask2;
-
-  idleTask = &tTaskIdle;
+  tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0,MYRTOS_PRO_COUNT - 1,  &taskIdleEnv[128]);
+  tTaskInit(&tTask1, task1Entry, (void *)0x11111111, 0, &task1Env[128]);
+  tTaskInit(&tTask2, task2Entry, (void *)0x22222222, 1, &task2Env[128]);
+  tTaskInit(&tTask3, task3Entry, (void *)0x33333333, 1, &task3Env[128]);
 
   nextTask = tTaskHighestReady();
 
