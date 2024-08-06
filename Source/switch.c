@@ -31,6 +31,9 @@ void tTaskInit(tTask * task, void (*entry)(void *), void * param, uint32_t prio,
     task->stack = stack;
     task->delayTicks = 0;
     task->prio = prio;
+    task->state = MYRTOS_TASK_STATE_RDY;
+
+    tNodeInit(&task->delayNode);
 
     taskTable[prio] = task;
     tBitmapSet(&taskPrioBitmap, prio);
@@ -47,6 +50,16 @@ void tTaskRunFirst(void)
 void tTaskSwitch(void)
 {
     MEM32(NVIC_INT_CTRL) |= NVIC_PENDSVSET;
+}
+
+void tTaskSchedRdy(tTask * task) {
+    taskTable[task->prio] = task;
+    tBitmapSet(&taskPrioBitmap, task->prio);
+}
+
+void tTaskSchedUnRdy(tTask * task) {
+    taskTable[task->prio] = (tTask *)0;
+    tBitmapClear(&taskPrioBitmap, task->prio);
 }
 
 void tTaskSched(void) {
@@ -68,19 +81,15 @@ void tTaskSched(void) {
 }
 
 void tTaskSystemTickHandler(void) {
-    int i;
+    tNode * node;
 
     uint32_t status = tTaskEnterCritical();
 
-    for(i = 0; i < MYRTOS_PRO_COUNT; i++) {
-        if (taskTable[i] == (tTask*)0) {
-            continue;
-        }
-
-        if(taskTable[i]->delayTicks > 0) {
-            taskTable[i]->delayTicks--;
-        } else {
-            tBitmapSet(&taskPrioBitmap, i);
+    for (node = tTaskDelayedList.headNode.nextNode; node != &(tTaskDelayedList.headNode); node = node->nextNode) {
+        tTask * task = tNodeParent(node, tTask, delayNode);
+        if (--task->delayTicks == 0) {
+            tTimeTaskWakeUp(task);
+            tTaskSchedRdy(task);
         }
     }
 
@@ -91,8 +100,11 @@ void tTaskSystemTickHandler(void) {
 
 void tTaskDelay(uint32_t ticks) {
     uint32_t status = tTaskEnterCritical();
-    currentTask->delayTicks = ticks;
-    tBitmapClear(&taskPrioBitmap, currentTask->prio);
+
+    tTimeTaskWait(currentTask, ticks);
+
+    tTaskSchedUnRdy(currentTask);
+
     tTaskExitCritical(status);
 
     tTaskSched();
@@ -138,4 +150,19 @@ void tTaskSchedEnable(void) {
 tTask * tTaskHighestReady(void) {
     uint32_t highestPrio = tBitmapGetFirstSet(&taskPrioBitmap);
     return taskTable[highestPrio];
+}
+
+void tTaskDelayListInit(void) {
+    tListInit(&tTaskDelayedList);
+}
+
+void tTimeTaskWait(tTask * task, uint32_t ticks) {
+    task->delayTicks = ticks;
+    tListAddLast(&tTaskDelayedList, &task->delayNode);
+    task->state |= MYRTOS_TASK_STATE_DELAYED;
+}
+
+void tTimeTaskWakeUp(tTask * task) {
+    tListRemove(&tTaskDelayedList, &task->delayNode);
+    task->state &= ~MYRTOS_TASK_STATE_DELAYED;
 }

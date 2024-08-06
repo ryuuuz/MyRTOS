@@ -61,6 +61,8 @@ tTaskStack task2Env[1024];
 
 uint8_t schedLockCount;
 
+tList tTaskDelayedList;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,16 +105,6 @@ tList list;
 tNode node[8];
 void task1Entry(void * param) {
   tSetSysTickPeriod(10);
-
-  tListInit(&list);
-  for (int i = 0; i < 8; i++) {
-    tNodeInit(&node[i]);
-    tListAddLast(&list, &node[i]);
-  }
-
-  for (int i = 0; i < 8; i++) {
-    tListRemoveFirst(&list);
-  }
 
   while(1) {
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
@@ -161,6 +153,7 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   tTaskSchedInit();
+  tTaskDelayListInit();
 
   tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0,MYRTOS_PRO_COUNT - 1,  &taskIdleEnv[1024]);
   tTaskInit(&tTask1, task1Entry, (void *)0x11111111, 0, &task1Env[1024]);
