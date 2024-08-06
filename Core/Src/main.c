@@ -99,9 +99,21 @@ void idleTaskEntry(void * param) {
   }
 }
 
-int firstSet = 0;
+tList list;
+tNode node[8];
 void task1Entry(void * param) {
   tSetSysTickPeriod(10);
+
+  tListInit(&list);
+  for (int i = 0; i < 8; i++) {
+    tNodeInit(&node[i]);
+    tListAddLast(&list, &node[i]);
+  }
+
+  for (int i = 0; i < 8; i++) {
+    tListRemoveFirst(&list);
+  }
+
   while(1) {
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
     tTaskDelay(100);
