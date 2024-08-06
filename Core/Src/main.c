@@ -59,7 +59,9 @@ tTaskStack taskIdleEnv[1024];
 tTaskStack task1Env[1024];
 tTaskStack task2Env[1024];
 
-uint32_t tickCounter;
+uint8_t schedLockCount;
+
+uint32_t shareCount;
 
 /* USER CODE END PV */
 
@@ -103,24 +105,28 @@ void task1Entry(void * param) {
   while(1) {
     tSetSysTickPeriod(10);
 
+    uint32_t var;
+    tTaskSchedDisable();
+    var = shareCount;
+
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
-    HAL_Delay(1000);
+    tTaskDelay(100);
+
+    var++;
+    shareCount = var;
+
+    tTaskSchedEnable();
   }
 }
 
 void task2Entry(void * param) {
   while(1) {
-
-    uint32_t status = tTaskEnterCritical();
-
-    uint32_t counter = tickCounter;
-    for (int i = 0; i < 0xFFFF; i++) {}
-    tickCounter = counter + 1;
-
-    tTaskExitCritical(status);
-
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
-    HAL_Delay(1000);
+    tTaskDelay(100);
+
+    tTaskSchedDisable();
+    shareCount++;
+    tTaskSchedEnable();
   }
 }
 
@@ -157,6 +163,8 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  tTaskSchedInit();
+
   tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0, &taskIdleEnv[1024]);
   tTaskInit(&tTask1, task1Entry, (void *)0x11111111, &task1Env[1024]);
   tTaskInit(&tTask2, task2Entry, (void *)0x22222222, &task2Env[1024]);

@@ -47,6 +47,11 @@ void tTaskSwitch(void)
 void tTaskSched(void) {
     uint32_t status = tTaskEnterCritical();
 
+    if (schedLockCount > 0) {
+        tTaskExitCritical(status);
+        return;
+    }
+
     if (currentTask == idleTask) {
         if (taskTable[0]->delayTicks == 0) {
             nextTask = taskTable[0];
@@ -94,7 +99,6 @@ void tTaskSystemTickHandler(void) {
         }
     }
 
-    tickCounter++;
     tTaskExitCritical(status);
 
     tTaskSched();
@@ -117,3 +121,30 @@ uint32_t tTaskEnterCritical(void) {
 void tTaskExitCritical(uint32_t status) {
     __set_PRIMASK(status);
 }
+
+void tTaskSchedInit(void) {
+    schedLockCount = 0;
+}
+
+void tTaskSchedDisable(void) {
+    uint32_t status = tTaskEnterCritical();
+
+    if (schedLockCount < 255) {
+        schedLockCount++;
+    }
+
+    tTaskExitCritical(status);
+}
+
+void tTaskSchedEnable(void) {
+    uint32_t status = tTaskEnterCritical();
+
+    if (schedLockCount > 0) {
+        if (--schedLockCount == 0) {
+            tTaskSched();
+        }
+    }
+
+    tTaskExitCritical(status);
+}
+
