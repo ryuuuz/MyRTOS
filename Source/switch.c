@@ -45,12 +45,15 @@ void tTaskSwitch(void)
 }
 
 void tTaskSched(void) {
+    uint32_t status = tTaskEnterCritical();
+
     if (currentTask == idleTask) {
         if (taskTable[0]->delayTicks == 0) {
             nextTask = taskTable[0];
         } else if (taskTable[1]->delayTicks == 0) {
             nextTask = taskTable[1];
         } else {
+            tTaskExitCritical(status);
             return;
         }
     } else {
@@ -60,6 +63,7 @@ void tTaskSched(void) {
             } else if (currentTask->delayTicks != 0) {
                 nextTask = idleTask;
             } else {
+                tTaskExitCritical(status);
                 return;
             }
         } else if (currentTask == taskTable[1]) {
@@ -68,26 +72,48 @@ void tTaskSched(void) {
             } else if (currentTask->delayTicks != 0) {
                 nextTask = idleTask;
             } else {
+                tTaskExitCritical(status);
                 return;
             }
         }
     }
 
     tTaskSwitch();
+
+    tTaskExitCritical(status);
 }
 
 void tTaskSystemTickHandler(void) {
     int i;
+
+    uint32_t status = tTaskEnterCritical();
+
     for(i = 0; i < 2; i++) {
         if(taskTable[i]->delayTicks > 0) {
             taskTable[i]->delayTicks--;
         }
     }
 
+    tickCounter++;
+    tTaskExitCritical(status);
+
     tTaskSched();
 }
 
 void tTaskDelay(uint32_t ticks) {
+    uint32_t status = tTaskEnterCritical();
     currentTask->delayTicks = ticks;
+    tTaskExitCritical(status);
+
     tTaskSched();
+}
+
+uint32_t tTaskEnterCritical(void) {
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    return primask;
+}
+
+void tTaskExitCritical(uint32_t status) {
+    __set_PRIMASK(status);
 }

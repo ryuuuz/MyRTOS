@@ -59,6 +59,7 @@ tTaskStack taskIdleEnv[1024];
 tTaskStack task1Env[1024];
 tTaskStack task2Env[1024];
 
+uint32_t tickCounter;
 
 /* USER CODE END PV */
 
@@ -109,6 +110,15 @@ void task1Entry(void * param) {
 
 void task2Entry(void * param) {
   while(1) {
+
+    uint32_t status = tTaskEnterCritical();
+
+    uint32_t counter = tickCounter;
+    for (int i = 0; i < 0xFFFF; i++) {}
+    tickCounter = counter + 1;
+
+    tTaskExitCritical(status);
+
     HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
     HAL_Delay(1000);
   }

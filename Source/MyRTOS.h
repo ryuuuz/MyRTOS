@@ -18,6 +18,7 @@ extern tTask * currentTask;
 extern tTask * nextTask;
 extern tTask * idleTask;
 extern tTask * taskTable[2];
+extern uint32_t tickCounter;
 
 void tTaskInit(tTask * task, void (*entry)(void *), void * param, tTaskStack * stack);
 void tTaskRunFirst(void);
@@ -25,5 +26,8 @@ void tTaskSwitch(void);
 void tTaskSched(void);
 void tTaskSystemTickHandler(void);
 void tTaskDelay(uint32_t delay);
+
+uint32_t tTaskEnterCritical(void);
+void tTaskExitCritical(uint32_t status);
 
 #endif //MYRTOS_H
