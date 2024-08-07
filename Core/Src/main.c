@@ -54,14 +54,7 @@ uint8_t schedLockCount;
 tList tTaskDelayedList;
 
 tTask tTaskIdle;
-tTask tTask1;
-tTask tTask2;
-tTask tTask3;
-
 tTaskStack taskIdleEnv[128];
-tTaskStack task1Env[128];
-tTaskStack task2Env[128];
-tTaskStack task3Env[128];
 
 /* USER CODE END PV */
 
@@ -69,61 +62,14 @@ tTaskStack task3Env[128];
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
-void idleTaskEntry(void * param);
-void task1Entry(void * param);
-void task2Entry(void * param);
-void task3Entry(void * param);
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-typedef struct _BlockType_t {
-  unsigned long * stackPtr;
-}BlockType_t;
-
-BlockType_t * blockPtr;
-extern BlockType_t *blockPtr;
-
-void tSetSysTickPeriod(uint32_t ms)
-{
-  SysTick->LOAD  = ms * SystemCoreClock / 1000 - 1;
-  NVIC_SetPriority (SysTick_IRQn, (1<<__NVIC_PRIO_BITS) - 1);
-  SysTick->VAL   = 0;
-  SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
-                   SysTick_CTRL_TICKINT_Msk   |
-                   SysTick_CTRL_ENABLE_Msk;
-}
-
 void idleTaskEntry(void * param) {
   while(1) {
 
-  }
-}
-
-tList list;
-tNode node[8];
-void task1Entry(void * param) {
-  tSetSysTickPeriod(10);
-
-  while(1) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
-    tTaskDelay(300);
-  }
-}
-
-void task2Entry(void * param) {
-  while(1) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
-    tTaskDelay(100);
-  }
-}
-
-void task3Entry(void * param) {
-  while(1) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)"This is task3\r\n", 15, 1000);
-    tTaskDelay(100);
   }
 }
 
@@ -161,12 +107,12 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   tTaskSchedInit();
+
   tTaskDelayListInit();
 
-  tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0,MYRTOS_PRO_COUNT - 1,  &taskIdleEnv[128]);
-  tTaskInit(&tTask1, task1Entry, (void *)0x11111111, 0, &task1Env[128]);
-  tTaskInit(&tTask2, task2Entry, (void *)0x22222222, 1, &task2Env[128]);
-  tTaskInit(&tTask3, task3Entry, (void *)0x33333333, 1, &task3Env[128]);
+  tInitApp();
+
+  tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0, MYRTOS_PRO_COUNT - 1, &taskIdleEnv[MTRTOS_IDLETASK_STACK_SIZE]);
 
   nextTask = tTaskHighestReady();
 

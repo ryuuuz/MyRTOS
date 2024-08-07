@@ -54,4 +54,6 @@ void tTaskExitCritical(uint32_t status);
 void tTaskRunFirst(void);
 void tTaskSwitch(void);
 
+void tInitApp(void);
+
 #endif //MYRTOS_H
