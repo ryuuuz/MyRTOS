@@ -1,7 +1,7 @@
 //
 // Created by ryzcq on 24-8-6.
 //
-#include "myLib.h"
+#include "tLib.h"
 
 void tBitmapInit(tBitmap * bitmap) {
     bitmap->bitmap = 0;

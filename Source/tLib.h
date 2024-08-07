@@ -2,8 +2,8 @@
 // Created by ryzcq on 24-8-6.
 //
 
-#ifndef MYLIB_H
-#define MYLIB_H
+#ifndef TLIB_H
+#define TLIB_H
 
 #include <stdint.h>
 
@@ -43,4 +43,4 @@ tNode * tListRemoveFirst(tList * list);
 void tListInsertAfter(tList * list, tNode * nodeAfter, tNode * nodeToInsert);
 void tListRemove(tList * list, tNode * node);
 
-#endif //MYLIB_H
+#endif //TLIB_H

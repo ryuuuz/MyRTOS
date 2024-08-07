@@ -110,6 +110,9 @@ void tTaskSystemTickHandler(void) {
     for (node = tTaskDelayedList.headNode.nextNode; node != &(tTaskDelayedList.headNode); node = node->nextNode) {
         tTask * task = tNodeParent(node, tTask, delayNode);
         if (--task->delayTicks == 0) {
+            if (task->waitEvent) {
+                tEventRemoveTask(task, (void *)0, tErrorTimeout);
+            }
             tTimeTaskWakeUp(task);
             tTaskSchedRdy(task);
         }

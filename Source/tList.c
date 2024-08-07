@@ -1,7 +1,7 @@
 //
 // Created by ryzcq on 24-8-6.
 //
-#include "myLib.h"
+#include "tLib.h"
 
 void tNodeInit(tNode * node) {
     node->nextNode = node;
@@ -110,9 +110,9 @@ void tListInsertAfter(tList * list, tNode * nodeAfter, tNode * nodeToInsert) {
     list->nodeCount++;
 }
 
-void   tListRemove(tList * list, tNode * node) {
-    node->nextNode->preNode = node->preNode;
+void tListRemove(tList * list, tNode * node) {
     node->preNode->nextNode = node->nextNode;
+    node->nextNode->preNode = node->preNode;
 
     list->nodeCount--;
 }
