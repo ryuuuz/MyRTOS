@@ -15,25 +15,16 @@ tTaskStack task2Env[128];
 tTaskStack task3Env[128];
 tTaskStack task4Env[128];
 
-tEvent eventWaitNormal;
+tSem sem1;
+tSem sem2;
 
 void task1Entry(void * param) {
     tSetSysTickPeriod(10);
 
-    tEventInit(&eventWaitNormal, tEventTypeUnknown);
+    tSemInit(&sem1, 0, 10);
+    tSemWait(&sem1, 0);
 
     while(1) {
-        uint32_t count = tEventWaitCount(&eventWaitNormal);
-        uint32_t wakeupCount = tEventRemoveAll(&eventWaitNormal, (void *)0, 0);
-
-        if (wakeupCount > 0) {
-            HAL_UART_Transmit(&huart1, (uint8_t *)"wake up all\r\n", 14, 1000);
-            tTaskSched();
-            count = tEventWaitCount(&eventWaitNormal);
-            if (count > 0) {
-                HAL_UART_Transmit(&huart1, (uint8_t *)"wait count not zero\r\n", 21, 1000);
-            }
-        }
 
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
         tTaskDelay(100);
@@ -41,21 +32,26 @@ void task1Entry(void * param) {
 }
 
 void task2Entry(void * param) {
-    while(1) {
-        tEventWait(&eventWaitNormal, currentTask, (void *)0, 0, 0);
-        tTaskSched();
+    tSemInfo info = {0};
+    int destroyed = 0;
 
+    while(1) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
         tTaskDelay(100);
+
+        if (!destroyed) {
+            tSemGetInfo(&sem1, &info);
+            tSemDestroy(&sem1);
+            destroyed = 1;
+        }
     }
 }
 
 void task3Entry(void * param) {
-    tEventInit(&eventWaitNormal, tEventTypeUnknown);
+    tSemInit(&sem2, 0, 10);
 
     while(1) {
-        tEventWait(&eventWaitNormal, currentTask, (void *)0, 0, 0);
-        tTaskSched();
+        tSemWait(&sem2, 10);
 
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task3\r\n", 15, 1000);
         tTaskDelay(100);
@@ -64,9 +60,6 @@ void task3Entry(void * param) {
 
 void task4Entry(void * param) {
     while(1) {
-        tEventWait(&eventWaitNormal, currentTask, (void *)0, 0, 0);
-        tTaskSched();
-
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task4\r\n", 15, 1000);
         tTaskDelay(100);
     }
@@ -75,6 +68,6 @@ void task4Entry(void * param) {
 void tInitApp(void) {
     tTaskInit(&tTask1, task1Entry, (void *)0x11111111, 0, &task1Env[128]);
     tTaskInit(&tTask2, task2Entry, (void *)0x22222222, 1, &task2Env[128]);
-    tTaskInit(&tTask3, task3Entry, (void *)0x33333333, 1, &task3Env[128]);
-    tTaskInit(&tTask4, task4Entry, (void *)0x44444444, 1, &task4Env[128]);
+    // tTaskInit(&tTask3, task3Entry, (void *)0x33333333, 1, &task3Env[128]);
+    // tTaskInit(&tTask4, task4Entry, (void *)0x44444444, 1, &task4Env[128]);
 }

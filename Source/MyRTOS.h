@@ -11,10 +11,13 @@
 #include "tConfig.h"
 #include "tTask.h"
 #include "tEvent.h"
+#include "tSem.h"
 
 typedef enum _tError {
     tErrorNoError = 0,
     tErrorTimeout,
+    tErrorResourceUnavaliable,
+    tErrorDel,
 }tError;
 
 extern tBitmap taskPrioBitmap;
