@@ -56,6 +56,27 @@ tTask * tEventWakeUp(tEvent * event, void * msg, uint32_t result)
     return task;
 }
 
+tTask * tEventWakeUpTask(tEvent * event, tTask * task,void * msg, uint32_t result)
+{
+    uint32_t status = tTaskEnterCritical();
+
+    tListRemove(&event->waitList, &task->linkNode);
+    task->waitEvent = (tEvent *)0;
+    task->eventMsg = msg;
+    task->waitEventResult = result;
+    task->state &= ~MYRTOS_TASK_WAIT_MASK;
+
+    if (task->delayTicks != 0) {
+        tTimeTaskWakeUp(task);
+    }
+
+    tTaskSchedRdy(task);
+
+    tTaskExitCritical(status);
+
+    return task;
+}
+
 void tEventRemoveTask(tTask * task, void * msg, uint32_t result)
 {
     uint32_t status = tTaskEnterCritical();

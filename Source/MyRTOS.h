@@ -14,6 +14,7 @@
 #include "tSem.h"
 #include "tMbox.h"
 #include "tMemBlock.h"
+#include "tFlagGroup.h"
 
 typedef enum _tError {
     tErrorNoError = 0,

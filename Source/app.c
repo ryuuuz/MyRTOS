@@ -15,23 +15,14 @@ tTaskStack task2Env[128];
 tTaskStack task3Env[128];
 tTaskStack task4Env[128];
 
-uint8_t mem[20][100];
-tMemBlock memBlock;
+tFlagGroup flagGroup1;
 
 void task1Entry(void * param) {
     tSetSysTickPeriod(10);
 
-    uint8_t * ptr = NULL;
-
-    tMemBlockInfo info;
-    tMemBlockInit(&memBlock, (uint8_t *)mem, 100, 20);
-    tMemBlockGetInfo(&memBlock, &info);
-
-    for (int i = 0; i < 20; i++) {
-        tMemBlockWait(&memBlock, (uint8_t **)&ptr, 0);
-    }
-
-    tMemBlockWait(&memBlock, (uint8_t **)&ptr, 0);
+    tFlagGroupInit(&flagGroup1, 0xFF);
+    tTaskDelay(1);
+    tFlagGroupDestroy(&flagGroup1);
 
     while(1) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
@@ -40,14 +31,17 @@ void task1Entry(void * param) {
 }
 
 void task2Entry(void * param) {
-    uint8_t destroy = 0;
+    uint32_t resultFlag;
+    tFlagGroupInfo info;
+
+    tFlagGroupWait(&flagGroup1, TFLAGGROUP_SET_ALL | TFLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
+    tFlagGroupGetInfo(&flagGroup1, &info);
+
+    tFlagGroupWait(&flagGroup1, TFLAGGROUP_SET_ALL | TFLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
+
     while(1) {
-        while (!destroy) {
-            tMemBlockDestroy(&memBlock);
-            destroy = 1;
-        }
-        // HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
-        // tTaskDelay(100);
+        HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
+        tTaskDelay(100);
     }
 }
 
