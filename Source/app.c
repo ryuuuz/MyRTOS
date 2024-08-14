@@ -15,16 +15,21 @@ tTaskStack task2Env[128];
 tTaskStack task3Env[128];
 tTaskStack task4Env[128];
 
-tSem sem1;
-tSem sem2;
+tMbox mbox;
+void * mboxMsgBuffer[20];
+uint32_t msg[20];
 
 void task1Entry(void * param) {
     tSetSysTickPeriod(10);
-
-    tSemInit(&sem1, 0, 10);
-    tSemWait(&sem1, 0);
+    tMboxInit(&mbox, mboxMsgBuffer, 20);
 
     while(1) {
+        tMboxInfo info;
+        for (int i = 0; i < 20; i++) {
+            msg[i] = i;
+            tMboxNotify(&mbox, &msg[i], tMboxSendNormal);
+            tMboxGetInfo(&mbox, &info);
+        }
 
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
         tTaskDelay(100);
@@ -32,27 +37,15 @@ void task1Entry(void * param) {
 }
 
 void task2Entry(void * param) {
-    tSemInfo info = {0};
-    int destroyed = 0;
-
     while(1) {
+        void * msg;
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
         tTaskDelay(100);
-
-        if (!destroyed) {
-            tSemGetInfo(&sem1, &info);
-            tSemDestroy(&sem1);
-            destroyed = 1;
-        }
     }
 }
 
 void task3Entry(void * param) {
-    tSemInit(&sem2, 0, 10);
-
     while(1) {
-        tSemWait(&sem2, 10);
-
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task3\r\n", 15, 1000);
         tTaskDelay(100);
     }
