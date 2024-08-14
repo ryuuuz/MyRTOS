@@ -13,6 +13,7 @@
 #include "tEvent.h"
 #include "tSem.h"
 #include "tMbox.h"
+#include "tMemBlock.h"
 
 typedef enum _tError {
     tErrorNoError = 0,

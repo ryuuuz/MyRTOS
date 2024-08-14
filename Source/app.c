@@ -15,32 +15,39 @@ tTaskStack task2Env[128];
 tTaskStack task3Env[128];
 tTaskStack task4Env[128];
 
-tMbox mbox;
-void * mboxMsgBuffer[20];
-uint32_t msg[20];
+uint8_t mem[20][100];
+tMemBlock memBlock;
 
 void task1Entry(void * param) {
     tSetSysTickPeriod(10);
-    tMboxInit(&mbox, mboxMsgBuffer, 20);
+
+    uint8_t * ptr = NULL;
+
+    tMemBlockInfo info;
+    tMemBlockInit(&memBlock, (uint8_t *)mem, 100, 20);
+    tMemBlockGetInfo(&memBlock, &info);
+
+    for (int i = 0; i < 20; i++) {
+        tMemBlockWait(&memBlock, (uint8_t **)&ptr, 0);
+    }
+
+    tMemBlockWait(&memBlock, (uint8_t **)&ptr, 0);
 
     while(1) {
-        tMboxInfo info;
-        for (int i = 0; i < 20; i++) {
-            msg[i] = i;
-            tMboxNotify(&mbox, &msg[i], tMboxSendNormal);
-            tMboxGetInfo(&mbox, &info);
-        }
-
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
         tTaskDelay(100);
     }
 }
 
 void task2Entry(void * param) {
+    uint8_t destroy = 0;
     while(1) {
-        void * msg;
-        HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
-        tTaskDelay(100);
+        while (!destroy) {
+            tMemBlockDestroy(&memBlock);
+            destroy = 1;
+        }
+        // HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);
+        // tTaskDelay(100);
     }
 }
 
