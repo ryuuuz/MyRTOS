@@ -15,6 +15,8 @@
 #include "tMbox.h"
 #include "tMemBlock.h"
 #include "tFlagGroup.h"
+#include "tMutex.h"
+
 
 typedef enum _tError {
     tErrorNoError = 0,
@@ -22,6 +24,7 @@ typedef enum _tError {
     tErrorResourceUnavaliable,
     tErrorDel,
     tErrorResourceFull,
+    tErrorOwner,
 }tError;
 
 extern tBitmap taskPrioBitmap;

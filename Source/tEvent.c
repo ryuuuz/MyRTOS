@@ -17,7 +17,7 @@ void tEventWait(tEvent * event, tTask * task, void * msg, uint32_t state, uint32
     task->waitEvent = event;
     task->eventMsg = msg;
     task->waitEventResult = tErrorNoError;
-    task->state |= state;
+    task->state |= state << 16;
 
     tTaskSchedUnRdy(task);
 

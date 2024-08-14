@@ -15,14 +15,17 @@ tTaskStack task2Env[128];
 tTaskStack task3Env[128];
 tTaskStack task4Env[128];
 
-tFlagGroup flagGroup1;
+tMutex mutex;
+tMutexInfo mutexInfo;
 
 void task1Entry(void * param) {
     tSetSysTickPeriod(10);
 
-    tFlagGroupInit(&flagGroup1, 0xFF);
-    tTaskDelay(1);
-    tFlagGroupDestroy(&flagGroup1);
+    tMutexInit(&mutex);
+    tMutexWait(&mutex, 0);
+    tTaskDelay(2);
+    tMutexGetInfo(&mutex, &mutexInfo);
+    tMutexDestroy(&mutex);
 
     while(1) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task1\r\n", 15, 1000);
@@ -31,13 +34,7 @@ void task1Entry(void * param) {
 }
 
 void task2Entry(void * param) {
-    uint32_t resultFlag;
-    tFlagGroupInfo info;
-
-    tFlagGroupWait(&flagGroup1, TFLAGGROUP_SET_ALL | TFLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
-    tFlagGroupGetInfo(&flagGroup1, &info);
-
-    tFlagGroupWait(&flagGroup1, TFLAGGROUP_SET_ALL | TFLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
+    tMutexWait(&mutex, 0);
 
     while(1) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"This is task2\r\n", 15, 1000);

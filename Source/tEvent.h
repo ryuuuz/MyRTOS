@@ -15,6 +15,7 @@ typedef enum _tEventType {
     tEventTypeMbox,
     tEventTypeMemBlock,
     tEventTypeFlagGroup,
+    tEventTypeMutex,
 }tEventType;
 
 typedef struct _tEvent {
