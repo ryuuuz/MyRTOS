@@ -128,6 +128,8 @@ void tTaskSystemTickHandler(void) {
 
     tTaskExitCritical(status);
 
+    tTimerModuleTickNotify();
+
     tTaskSched();
 }
 

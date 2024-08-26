@@ -16,6 +16,7 @@
 #include "tMemBlock.h"
 #include "tFlagGroup.h"
 #include "tMutex.h"
+#include "tTimer.h"
 
 
 typedef enum _tError {

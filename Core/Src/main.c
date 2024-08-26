@@ -110,6 +110,8 @@ int main(void)
 
   tTaskDelayListInit();
 
+  tTimerModuleInit();
+
   tInitApp();
 
   tTaskInit(&tTaskIdle, idleTaskEntry, (void *)0, MYRTOS_PRO_COUNT - 1, &taskIdleEnv[MTRTOS_IDLETASK_STACK_SIZE]);
